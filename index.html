@@ -7,6 +7,13 @@
 <title>Christmas AR Photo Spot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js"></script>
 <style>
 /* ===== 基本 ===== */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -80,6 +87,28 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 #preview.show{display:flex}
 #preview h2{font-family:"Great Vibes",cursive;font-weight:400;font-size:38px;color:#f3d27a;margin-bottom:10px}
 #pimg{max-width:100%;max-height:58vh;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);-webkit-touch-callout:default}
+.btn-main.green{background:linear-gradient(180deg,#2f9152,#1d6636);box-shadow:0 6px 20px rgba(29,102,54,.45),inset 0 1px 0 rgba(255,255,255,.25);margin-top:14px}
+.btn-main small{display:block;font-size:11px;font-weight:500;opacity:.9;margin-top:2px}
+
+/* ===== 3D AR画面 ===== */
+#arview{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;
+  background:radial-gradient(ellipse at 50% 35%,#2a5a40 0%,#0f2a1d 65%,#08170f 100%);
+  padding:calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 14px)}
+#arview.show{display:flex}
+.arhead{display:flex;align-items:center;gap:12px;padding:0 14px}
+.artitle{font-size:16px;font-weight:700;color:#f3d27a}
+#mv{flex:1;width:100%;min-height:0;--poster-color:transparent;background:transparent}
+#arBtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:auto;min-width:240px;padding:15px 26px}
+.archips{display:flex;justify-content:center;gap:8px;padding:10px 14px 6px}
+.chip{padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2)}
+.chip.on{background:#f3d27a;color:#3a2a00;border-color:#f3d27a}
+.artips{margin:4px 20px 0;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.28);font-size:12px;line-height:1.75;color:#f1ead6}
+.artips b{color:#f3d27a}
+#arNo{display:none;margin:8px 20px 0;font-size:12.5px;line-height:1.7;color:#ffd2c8;text-align:center}
+#arToCam{display:block;margin:10px auto 0;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid rgba(243,210,122,.6);color:#f3d27a}
+.item{position:relative}
+.item .b3d{position:absolute;top:3px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:5px;background:#f3d27a;color:#3a2a00}
+
 #pnote{margin:12px 0 16px;font-size:12px;color:#d8d0b8;text-align:center;line-height:1.7}
 #preview .btn-main,#preview .btn-sub{max-width:340px}
 </style>
@@ -95,11 +124,39 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   <canvas id="start-snow"></canvas>
   <div class="script">Merry Christmas</div>
   <div class="sub">AR PHOTO SPOT</div>
-  <p class="lead">ツリーや雪だるまを画面に置いて、<br>降る雪と一緒に記念撮影しよう！</p>
-  <button class="btn-main" id="go">カメラを起動する</button>
+  <p class="lead">3Dの雪だるまやツリーが目の前に！<br>一緒に記念撮影しよう</p>
+  <button class="btn-main" id="goAR">3Dを目の前に出す<small>床に置いて、横に並んで撮影</small></button>
+  <button class="btn-main green" id="go">カメラで飾って撮る<small>スタンプ・降る雪と一緒に撮影</small></button>
   <label class="btn-sub" for="file" id="gofile">カメラが使えない方はこちら<br><small style="font-size:11px;opacity:.8">（写真を撮る／選んでから飾り付け）</small></label>
   <p id="err"></p>
   <p class="note">カメラの使用を求められたら「許可」を押してください。<br>撮った写真はこのスマホの中にだけ保存されます。</p>
+</div>
+
+<!-- 3D AR画面 -->
+<div id="arview">
+  <div class="arhead">
+    <button class="round" id="arBack" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="artitle">3Dを目の前に出す</div>
+  </div>
+  <model-viewer id="mv" src="models/snowman.glb" ios-src="models/snowman.usdz" alt="クリスマスの3Dモデル"
+    ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor"
+    camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="25deg" interaction-prompt="none"
+    shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral"
+    camera-orbit="20deg 78deg auto" touch-action="pan-y">
+    <button slot="ar-button" id="arBtn" class="btn-main">ARで目の前に出す</button>
+  </model-viewer>
+  <div class="archips">
+    <button class="chip on" data-m="snowman">雪だるま</button>
+    <button class="chip" data-m="tree">ツリー</button>
+    <button class="chip" data-m="presents">プレゼント</button>
+  </div>
+  <p class="artips">
+    <b>①</b>「ARで目の前に出す」を押す　<b>②</b>床を映してスマホをゆっくり動かす<br>
+    <b>③</b>現れたら指で位置・向き・大きさを調整　<b>④</b>横に並んで撮影！<br>
+    iPhoneは画面の<b>白い丸ボタン</b>で撮影（長押しで動画）、Androidはスクリーンショットで保存できます。
+  </p>
+  <p id="arNo">このスマホ・ブラウザではARが使えないようです。<br>「カメラで飾って撮る」なら3Dスタンプを使えます。</p>
+  <button id="arToCam">カメラで飾って撮る →</button>
 </div>
 
 <!-- 上部 -->
@@ -114,7 +171,7 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   </div>
   <button class="round" id="timer" aria-label="タイマー">3秒</button>
 </div>
-<div id="hint">スタンプをタップで追加 ・ 指でドラッグ ・ 2本指で拡大と回転</div>
+<div id="hint">タップで追加・ドラッグで移動・2本指で拡大と回転（3Dは向きが変わる）</div>
 
 <!-- 下部 -->
 <div id="bottom">
@@ -382,7 +439,9 @@ function drawCover(src, sw, sh, mirror) {
 function drawSticker(s, showSel) {
   ctx.save();
   ctx.translate(s.x, s.y); ctx.rotate(s.r); ctx.scale(s.s * (s.flip ? -1 : 1), s.s);
-  ctx.drawImage(s.a.img, -s.a.w / 2, -s.a.h / 2, s.a.w, s.a.h);
+  var src = s.a.img;
+  if (s.a.kind === '3d') { if (!window.Kit3D) { ctx.restore(); return; } src = window.Kit3D.draw(s.a.name, s.yaw || 0); }
+  ctx.drawImage(src, -s.a.w / 2, -s.a.h / 2, s.a.w, s.a.h);
   if (showSel) {
     ctx.scale(s.flip ? -1 : 1, 1);
     ctx.lineWidth = 2.5 * DPR / s.s; ctx.setLineDash([8 * DPR / s.s, 6 * DPR / s.s]);
@@ -486,7 +545,7 @@ function beginGesture() {
   if (l.length === 1) gesture = { type: 'drag', sx: selected.x, sy: selected.y, px: l[0].x, py: l[0].y };
   else {
     var a = l[0], b = l[1];
-    gesture = { type: 'pinch', sx: selected.x, sy: selected.y, ss: selected.s, sr: selected.r,
+    gesture = { type: 'pinch', sx: selected.x, sy: selected.y, ss: selected.s, sr: selected.r, syaw: selected.yaw || 0,
       d: Math.hypot(b.x - a.x, b.y - a.y) || 1, ang: Math.atan2(b.y - a.y, b.x - a.x), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
   }
 }
@@ -512,7 +571,9 @@ cv.addEventListener('pointermove', function (e) {
   } else if (gesture.type === 'pinch' && l.length >= 2) {
     var a = l[0], b = l[1], d = Math.hypot(b.x - a.x, b.y - a.y);
     selected.s = Math.max(.08, Math.min(12, gesture.ss * d / gesture.d));
-    selected.r = gesture.sr + Math.atan2(b.y - a.y, b.x - a.x) - gesture.ang;
+    var dAng = Math.atan2(b.y - a.y, b.x - a.x) - gesture.ang;
+    if (selected.a.kind === '3d') selected.yaw = gesture.syaw + dAng * 2; // 3Dは2本指のひねりで向きを回す
+    else selected.r = gesture.sr + dAng;
     selected.x = gesture.sx + (a.x + b.x) / 2 - gesture.mx; selected.y = gesture.sy + (a.y + b.y) / 2 - gesture.my;
   }
 });
@@ -521,8 +582,9 @@ cv.addEventListener('pointerup', endPtr);
 cv.addEventListener('pointercancel', endPtr);
 
 function addSticker(a) {
-  var target = W * (a.w > a.h * 2 ? .7 : .38);
-  var s = { a: a, x: W / 2 + rnd(-.22, .22) * W, y: H * rnd(.28, .6), s: target / a.w, r: 0, flip: false };
+  var target = W * (a.kind === '3d' ? .75 : a.w > a.h * 2 ? .7 : .38);
+  var s = { a: a, x: W / 2 + rnd(-.22, .22) * W, y: H * rnd(.28, .6), s: target / a.w, r: 0, flip: false, yaw: a.kind === '3d' ? -0.35 : 0 };
+  if (a.kind === '3d') { s.x = W / 2 + rnd(-.12, .12) * W; s.y = H * rnd(.5, .6); }
   stickers.push(s); selected = s; updateSelbar();
 }
 var selbar = document.getElementById('selbar');
@@ -548,10 +610,11 @@ function fxLabel() {
 function renderTray() {
   tray.innerHTML = '';
   if (currentTab === 'stamp') {
-    textAssets.concat(assets).forEach(function (a) {
+    assets3d.concat(textAssets, assets).forEach(function (a) {
       var b = document.createElement('button'); b.className = 'item';
       var im = document.createElement('img'); im.src = a.src; im.alt = a.name;
       b.appendChild(im);
+      if (a.kind === '3d') { var bd = document.createElement('span'); bd.className = 'b3d'; bd.textContent = '3D'; b.appendChild(bd); }
       b.onclick = function () { addSticker(a); };
       tray.appendChild(b);
     });
@@ -621,7 +684,7 @@ document.getElementById('save').onclick = function () {
    ========================================================= */
 var sc = document.getElementById('start-snow'), sx = sc.getContext('2d'), sflakes = [], sRun = true;
 function startSnow() {
-  sc.width = innerWidth; sc.height = innerHeight;
+  sc.width = innerWidth; sc.height = innerHeight; sflakes = [];
   for (var i = 0; i < 70; i++) sflakes.push({ x: rnd(0, sc.width), y: rnd(0, sc.height), r: rnd(1, 3.5), v: rnd(20, 60), p: rnd(0, 6) });
   var lt = performance.now();
   (function f(now) {
@@ -638,6 +701,61 @@ function startSnow() {
 }
 function stopStartSnow() { sRun = false; }
 
+/* =========================================================
+   3Dスタンプ（カメラで飾るモード用）
+   ========================================================= */
+var assets3d = [];
+function on3dReady() {
+  if (!window.Kit3D || assets3d.length) return;
+  assets3d = window.Kit3D.list.map(function (m) {
+    return { kind: '3d', name: m.name, label: m.label, img: null, w: 512, h: 512, src: m.thumb };
+  });
+  if (currentTab === 'stamp') renderTray();
+}
+window.addEventListener('kit3d-ready', on3dReady);
+
+/* =========================================================
+   3D AR画面（床に置くAR）
+   ========================================================= */
+var arview = document.getElementById('arview'), mv = document.getElementById('mv');
+var MODELS = { snowman: 1, tree: 1, presents: 1 };
+function setModel(name) {
+  if (!MODELS[name]) name = 'snowman';
+  mv.setAttribute('src', 'models/' + name + '.glb');
+  mv.setAttribute('ios-src', 'models/' + name + '.usdz');
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) { c.classList.toggle('on', c.getAttribute('data-m') === name); });
+}
+function openAR(name) {
+  setModel(name);
+  arview.classList.add('show');
+  stopStartSnow();
+}
+function checkAR() {
+  // model-viewer読み込み後、ARが使えない端末なら案内を出す
+  if (typeof mv.canActivateAR === 'undefined') return;
+  document.getElementById('arNo').style.display = mv.canActivateAR ? 'none' : 'block';
+}
+mv.addEventListener('load', checkAR);
+setTimeout(checkAR, 3000);
+document.getElementById('goAR').onclick = function () { openAR('snowman'); };
+document.getElementById('arBack').onclick = function () {
+  arview.classList.remove('show');
+  if (mode === 'none') { sRun = true; startSnow(); }
+};
+document.getElementById('arToCam').onclick = function () {
+  arview.classList.remove('show');
+  errEl.style.display = 'none';
+  startCamera().then(enterApp).catch(function () { if (mode === 'none') { sRun = true; startSnow(); } });
+};
+Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) {
+  c.onclick = function () { setModel(c.getAttribute('data-m')); };
+});
+// QRコード用：URLの最後に ?ar=snowman / ?ar=tree / ?ar=presents を付けると、そのモデルのAR画面が直接開く
+(function () {
+  var m = /[?&]ar=([a-z]+)/.exec(location.search);
+  if (m) openAR(m[1]);
+})();
+
 /* ===== 起動 ===== */
 resize();
 renderTray(); fxLabel();
@@ -649,6 +767,70 @@ if (document.fonts && document.fonts.load) {
 setTimeout(buildTextAssets, 1500);
 startSnow();
 requestAnimationFrame(loop);
+</script>
+
+<!-- 3Dスタンプの描画（three.js） -->
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+var SIZE = 512;
+var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x000000, 0);
+
+var scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a6a, 1.6));
+var key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 4, 3); scene.add(key);
+var rim = new THREE.DirectionalLight(0xfff1d0, 0.9); rim.position.set(-3, 2, -2); scene.add(rim);
+var camera = new THREE.PerspectiveCamera(28, 1, 0.05, 50);
+
+// 足元のやわらかい影
+var sc = document.createElement('canvas'); sc.width = sc.height = 128;
+var sx = sc.getContext('2d'), gr = sx.createRadialGradient(64, 64, 0, 64, 64, 64);
+gr.addColorStop(0, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+sx.fillStyle = gr; sx.fillRect(0, 0, 128, 128);
+var shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.002; scene.add(shadow);
+
+var LIST = [
+  { name: 'snowman', label: '雪だるま' },
+  { name: 'tree', label: 'ツリー' },
+  { name: 'presents', label: 'プレゼント' }
+];
+var models = {}, current = null;
+
+function show(name, yaw) {
+  var m = models[name]; if (!m) return;
+  if (current !== m) { if (current) scene.remove(current.obj); scene.add(m.obj); current = m; }
+  m.obj.rotation.y = yaw;
+  shadow.scale.set(m.foot, m.foot * 0.8, 1);
+  var frame = Math.max(m.h, m.wide) * 1.12;
+  var d = (frame / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  camera.position.set(0, m.h * 0.5 + d * 0.18, d);
+  camera.lookAt(0, m.h * 0.5, 0);
+  renderer.render(scene, camera);
+}
+
+var loader = new GLTFLoader();
+Promise.all(LIST.map(function (it) {
+  return loader.loadAsync('models/' + it.name + '.glb').then(function (g) {
+    var obj = g.scene, box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
+    var holder = new THREE.Group(); holder.add(obj);
+    models[it.name] = { obj: holder, h: size.y, wide: Math.max(size.x, size.z), foot: Math.max(size.x, size.z) * 1.3 };
+    show(it.name, -0.35);
+    it.thumb = renderer.domElement.toDataURL('image/png');
+  });
+})).then(function () {
+  window.Kit3D = {
+    list: LIST,
+    draw: function (name, yaw) { show(name, yaw); return renderer.domElement; }
+  };
+  window.dispatchEvent(new Event('kit3d-ready'));
+}).catch(function (e) { console.warn('3Dスタンプを読み込めませんでした', e); });
 </script>
 </body>
 </html>
