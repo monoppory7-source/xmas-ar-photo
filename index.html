@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f2a1d">
+<title>Christmas AR Photo Spot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== 基本 ===== */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#fff;overflow:hidden;
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif}
+button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:none}
+#stage{position:fixed;inset:0;touch-action:none}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* ===== スタート画面 ===== */
+#start{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;text-align:center;
+  background:radial-gradient(ellipse at 50% 30%,#1f4a33 0%,#0f2a1d 60%,#08170f 100%)}
+#start .script{font-family:"Great Vibes",cursive;font-size:56px;color:#f3d27a;line-height:1;
+  text-shadow:0 2px 18px rgba(243,210,122,.35)}
+#start .sub{margin-top:10px;font-size:13px;letter-spacing:.3em;color:#e9dcb8}
+#start .lead{margin:28px 0 30px;font-size:15px;line-height:1.9;color:#f1ead6}
+.btn-main{display:block;width:100%;max-width:320px;padding:17px;border-radius:999px;font-size:17px;font-weight:700;
+  background:linear-gradient(180deg,#d8443f,#a92626);box-shadow:0 6px 20px rgba(169,38,38,.45),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn-sub{display:block;width:100%;max-width:320px;margin-top:14px;padding:14px;border-radius:999px;font-size:14px;
+  border:1px solid rgba(243,210,122,.55);color:#f3d27a}
+#start .note{margin-top:22px;font-size:11.5px;line-height:1.7;color:#bfb79f}
+#err{margin-top:16px;font-size:13px;color:#ffb4a8;line-height:1.7;display:none}
+#start-snow{position:absolute;inset:0;pointer-events:none;z-index:-1}
+
+/* ===== 上部バー ===== */
+#top{position:fixed;left:0;right:0;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+.round{width:46px;height:46px;border-radius:50%;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,.18)}
+.round svg{width:24px;height:24px}
+.round.on{background:rgba(243,210,122,.9);color:#3a2a00}
+#selbar{display:none;gap:8px}
+#selbar.show{display:flex}
+.pill{padding:10px 14px;border-radius:999px;background:rgba(0,0,0,.5);font-size:13px;font-weight:700;border:1px solid rgba(255,255,255,.2)}
+.pill.danger{background:rgba(190,40,40,.85)}
+
+/* ===== 下部パネル ===== */
+#bottom{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 0 calc(env(safe-area-inset-bottom) + 12px);
+  background:linear-gradient(0deg,rgba(0,0,0,.65),rgba(0,0,0,0))}
+#tabs{display:flex;justify-content:center;gap:6px;padding:14px 0 8px}
+.tab{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.14)}
+.tab.on{background:#f3d27a;color:#3a2a00}
+#tray{display:flex;gap:10px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
+#tray::-webkit-scrollbar{display:none}
+.item{flex:0 0 auto;width:64px;height:64px;border-radius:16px;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:10px;gap:2px}
+.item img{width:46px;height:46px;object-fit:contain;pointer-events:none}
+.item.fx{width:84px;font-size:12px;font-weight:700}
+.item.fx .ic{font-size:22px;line-height:1}
+.item.fx.on{background:rgba(243,210,122,.92);color:#3a2a00;border-color:#f3d27a}
+#shotrow{display:flex;align-items:center;justify-content:center;gap:42px;padding-top:6px}
+#shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;padding:4px;background:transparent}
+#shutter span{display:block;width:100%;height:100%;border-radius:50%;background:linear-gradient(180deg,#e0524c,#b02a2a)}
+#shutter:active span{transform:scale(.92)}
+.side{width:46px;text-align:center;font-size:11px;color:#eee}
+#hint{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);z-index:9;
+  padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.5);font-size:12px;white-space:nowrap;transition:opacity .5s}
+
+/* ===== カウントダウン・フラッシュ ===== */
+#count{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;pointer-events:none;
+  font-size:140px;font-weight:700;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.5)}
+#flash{position:fixed;inset:0;z-index:21;background:#fff;opacity:0;pointer-events:none}
+#flash.go{animation:fl .45s ease-out}
+@keyframes fl{0%{opacity:.95}100%{opacity:0}}
+
+/* ===== 撮影後プレビュー ===== */
+#preview{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(8,23,15,.96);padding:calc(env(safe-area-inset-top) + 16px) 18px calc(env(safe-area-inset-bottom) + 18px)}
+#preview.show{display:flex}
+#preview h2{font-family:"Great Vibes",cursive;font-weight:400;font-size:38px;color:#f3d27a;margin-bottom:10px}
+#pimg{max-width:100%;max-height:58vh;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);-webkit-touch-callout:default}
+#pnote{margin:12px 0 16px;font-size:12px;color:#d8d0b8;text-align:center;line-height:1.7}
+#preview .btn-main,#preview .btn-sub{max-width:340px}
+</style>
+</head>
+<body>
+
+<div id="stage"><canvas id="cv"></canvas></div>
+<video id="video" playsinline muted autoplay></video>
+<input type="file" id="file" accept="image/*" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0">
+
+<!-- スタート画面 -->
+<div id="start">
+  <canvas id="start-snow"></canvas>
+  <div class="script">Merry Christmas</div>
+  <div class="sub">AR PHOTO SPOT</div>
+  <p class="lead">ツリーや雪だるまを画面に置いて、<br>降る雪と一緒に記念撮影しよう！</p>
+  <button class="btn-main" id="go">カメラを起動する</button>
+  <label class="btn-sub" for="file" id="gofile">カメラが使えない方はこちら<br><small style="font-size:11px;opacity:.8">（写真を撮る／選んでから飾り付け）</small></label>
+  <p id="err"></p>
+  <p class="note">カメラの使用を求められたら「許可」を押してください。<br>撮った写真はこのスマホの中にだけ保存されます。</p>
+</div>
+
+<!-- 上部 -->
+<div id="top">
+  <button class="round" id="flip" aria-label="カメラ切替">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-3l-2-3H9L7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/><path d="M9 13a3 3 0 0 1 5.2-2M15 13a3 3 0 0 1-5.2 2"/><path d="M14 9.5l.4 1.6-1.6.3M10 16.5l-.4-1.6 1.6-.3"/></svg>
+  </button>
+  <div id="selbar">
+    <button class="pill" id="bFlip">反転</button>
+    <button class="pill" id="bFront">前へ</button>
+    <button class="pill danger" id="bDel">削除</button>
+  </div>
+  <button class="round" id="timer" aria-label="タイマー">3秒</button>
+</div>
+<div id="hint">スタンプをタップで追加 ・ 指でドラッグ ・ 2本指で拡大と回転</div>
+
+<!-- 下部 -->
+<div id="bottom">
+  <div id="tabs">
+    <button class="tab on" data-tab="stamp">スタンプ</button>
+    <button class="tab" data-tab="fx">エフェクト</button>
+  </div>
+  <div id="tray"></div>
+  <div id="shotrow">
+    <button class="side" id="clear">全部<br>消す</button>
+    <button id="shutter" aria-label="撮影"><span></span></button>
+    <div class="side" id="fxlabel">雪</div>
+  </div>
+</div>
+
+<div id="count"></div>
+<div id="flash"></div>
+
+<!-- プレビュー -->
+<div id="preview">
+  <h2>Merry Christmas!</h2>
+  <img id="pimg" alt="撮影した写真">
+  <p id="pnote">「写真を保存する」→「画像を保存」でカメラロールに保存できます。<br>うまく保存できない場合は、写真を長押しして保存してください。</p>
+  <button class="btn-main" id="save">写真を保存する</button>
+  <button class="btn-sub" id="retake">撮り直す</button>
+</div>
+
+<script>
+/* =========================================================
+   設定（ここを書き換えるだけで文言を変えられます）
+   ========================================================= */
+var CONFIG = {
+  textStamps: [
+    { text: 'Merry Christmas', font: '"Great Vibes", cursive', color: '#f6d77f', size: 120 },
+    { text: 'Happy Holidays',  font: '"Great Vibes", cursive', color: '#ffffff', size: 110 },
+    { text: 'XMAS 2026',       font: '"Zen Maru Gothic", sans-serif', color: '#ffffff', size: 90, weight: 700, outline: '#c23a35' }
+  ],
+  defaultEffects: { snow: true, sparkle: false, bokeh: false },
+  defaultFacing: 'environment' // 'environment'＝外カメラ / 'user'＝インカメラ
+};
+
+/* =========================================================
+   スタンプ素材（すべてオリジナルのSVG）
+   ========================================================= */
+function star(cx, cy, R, r, n) {
+  var p = [];
+  for (var i = 0; i < n * 2; i++) {
+    var a = Math.PI / n * i - Math.PI / 2, rr = i % 2 ? r : R;
+    p.push((cx + Math.cos(a) * rr).toFixed(1) + ',' + (cy + Math.sin(a) * rr).toFixed(1));
+  }
+  return p.join(' ');
+}
+var S = 'xmlns="http://www.w3.org/2000/svg"';
+var SVGS = [
+  { name: 'ツリー', w: 200, h: 230, svg:
+    '<svg ' + S + ' viewBox="0 0 200 230">' +
+    '<rect x="86" y="190" width="28" height="34" rx="4" fill="#7a4a2a"/>' +
+    '<polygon points="100,34 42,110 158,110" fill="#2f9152"/>' +
+    '<polygon points="100,66 28,152 172,152" fill="#278046"/>' +
+    '<polygon points="100,104 14,198 186,198" fill="#1f6e3b"/>' +
+    '<path d="M60 96 Q100 118 140 94 M44 140 Q100 166 158 138 M30 186 Q100 214 172 184" stroke="#f3d27a" stroke-width="5" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="78" cy="125" r="8" fill="#d8443f"/><circle cx="126" cy="118" r="8" fill="#4aa3df"/>' +
+    '<circle cx="62" cy="170" r="8" fill="#f3d27a"/><circle cx="108" cy="176" r="8" fill="#d8443f"/>' +
+    '<circle cx="146" cy="166" r="8" fill="#ffffff"/><circle cx="96" cy="86" r="7" fill="#ffffff"/>' +
+    '<polygon points="' + star(100, 30, 24, 10, 5) + '" fill="#f6d040" stroke="#e0a91c" stroke-width="2"/></svg>' },
+  { name: '雪だるま', w: 200, h: 230, svg:
+    '<svg ' + S + ' viewBox="0 0 200 230">' +
+    '<circle cx="100" cy="166" r="56" fill="#fff" stroke="#d7e3ee" stroke-width="4"/>' +
+    '<circle cx="100" cy="82" r="40" fill="#fff" stroke="#d7e3ee" stroke-width="4"/>' +
+    '<rect x="70" y="26" width="60" height="12" rx="3" fill="#2b2b2b"/><rect x="80" y="0" width="40" height="32" rx="4" fill="#2b2b2b"/>' +
+    '<rect x="80" y="20" width="40" height="7" fill="#c23a35"/>' +
+    '<circle cx="86" cy="76" r="5" fill="#2b2b2b"/><circle cx="114" cy="76" r="5" fill="#2b2b2b"/>' +
+    '<polygon points="100,86 100,96 128,92" fill="#f08a24"/>' +
+    '<path d="M88 104 Q100 110 112 104" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '<path d="M62 116 Q100 132 138 116 L136 128 Q100 144 64 128 Z" fill="#c23a35"/>' +
+    '<rect x="116" y="126" width="16" height="40" rx="5" fill="#c23a35" transform="rotate(-12 124 146)"/>' +
+    '<circle cx="100" cy="150" r="5" fill="#2b2b2b"/><circle cx="100" cy="172" r="5" fill="#2b2b2b"/><circle cx="100" cy="194" r="5" fill="#2b2b2b"/>' +
+    '<circle cx="80" cy="86" r="6" fill="#ffb3b3" opacity=".7"/><circle cx="120" cy="86" r="6" fill="#ffb3b3" opacity=".7"/></svg>' },
+  { name: 'トナカイ', w: 200, h: 200, svg:
+    '<svg ' + S + ' viewBox="0 0 200 200">' +
+    '<path d="M70 70 L52 30 M52 30 L34 22 M52 30 L50 8 M130 70 L148 30 M148 30 L166 22 M148 30 L150 8" stroke="#6b4226" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<ellipse cx="54" cy="88" rx="22" ry="12" fill="#a0673f" transform="rotate(-25 54 88)"/>' +
+    '<ellipse cx="146" cy="88" rx="22" ry="12" fill="#a0673f" transform="rotate(25 146 88)"/>' +
+    '<ellipse cx="100" cy="114" rx="50" ry="56" fill="#b5784a"/>' +
+    '<ellipse cx="100" cy="146" rx="32" ry="24" fill="#e7c49d"/>' +
+    '<circle cx="80" cy="104" r="7" fill="#2b2b2b"/><circle cx="120" cy="104" r="7" fill="#2b2b2b"/>' +
+    '<circle cx="82" cy="102" r="2.5" fill="#fff"/><circle cx="122" cy="102" r="2.5" fill="#fff"/>' +
+    '<circle cx="100" cy="134" r="14" fill="#e0322e"/><circle cx="95" cy="129" r="4" fill="#fff" opacity=".8"/>' +
+    '<path d="M90 156 Q100 164 110 156" stroke="#6b4226" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="66" cy="126" r="7" fill="#ff9e9e" opacity=".6"/><circle cx="134" cy="126" r="7" fill="#ff9e9e" opacity=".6"/></svg>' },
+  { name: 'プレゼント', w: 200, h: 200, svg:
+    '<svg ' + S + ' viewBox="0 0 200 200">' +
+    '<rect x="30" y="80" width="140" height="110" rx="8" fill="#c23a35"/>' +
+    '<rect x="22" y="62" width="156" height="34" rx="6" fill="#d8443f"/>' +
+    '<rect x="88" y="62" width="24" height="128" fill="#f3d27a"/>' +
+    '<rect x="22" y="96" width="156" height="6" fill="#a92626" opacity=".5"/>' +
+    '<ellipse cx="74" cy="50" rx="28" ry="16" fill="none" stroke="#f3d27a" stroke-width="10" transform="rotate(-20 74 50)"/>' +
+    '<ellipse cx="126" cy="50" rx="28" ry="16" fill="none" stroke="#f3d27a" stroke-width="10" transform="rotate(20 126 50)"/>' +
+    '<circle cx="100" cy="60" r="12" fill="#e7b94a"/></svg>' },
+  { name: 'サンタ帽', w: 200, h: 170, svg:
+    '<svg ' + S + ' viewBox="0 0 200 170">' +
+    '<path d="M30 130 C40 60 90 20 140 26 C168 30 184 60 178 86 L160 80 C156 60 144 52 132 56 C120 70 150 110 166 132 Z" fill="#d8332f"/>' +
+    '<path d="M60 100 C80 60 110 44 130 50" stroke="#ff6a5e" stroke-width="6" fill="none" opacity=".5" stroke-linecap="round"/>' +
+    '<rect x="18" y="118" width="164" height="38" rx="19" fill="#fff"/>' +
+    '<circle cx="172" cy="90" r="20" fill="#fff"/></svg>' },
+  { name: 'ベル', w: 200, h: 200, svg:
+    '<svg ' + S + ' viewBox="0 0 200 200">' +
+    '<g transform="rotate(-16 70 110)"><path d="M70 50 C44 50 38 80 38 110 C38 130 28 140 24 148 L116 148 C112 140 102 130 102 110 C102 80 96 50 70 50 Z" fill="#f2c443" stroke="#d39a1c" stroke-width="4"/><circle cx="70" cy="156" r="10" fill="#d39a1c"/></g>' +
+    '<g transform="rotate(16 130 110)"><path d="M130 50 C104 50 98 80 98 110 C98 130 88 140 84 148 L176 148 C172 140 162 130 162 110 C162 80 156 50 130 50 Z" fill="#f6d360" stroke="#d39a1c" stroke-width="4"/><circle cx="130" cy="156" r="10" fill="#d39a1c"/></g>' +
+    '<path d="M100 44 C80 20 60 26 66 44 C72 56 92 50 100 44 C108 50 128 56 134 44 C140 26 120 20 100 44 Z" fill="#c23a35"/>' +
+    '<circle cx="100" cy="44" r="8" fill="#a92626"/>' +
+    '<path d="M96 50 L84 80 M104 50 L116 80" stroke="#c23a35" stroke-width="7" stroke-linecap="round"/></svg>' },
+  { name: '靴下', w: 160, h: 220, svg:
+    '<svg ' + S + ' viewBox="0 0 160 220">' +
+    '<path d="M40 40 L110 40 L110 130 C110 150 120 160 132 168 C156 184 140 214 112 206 L52 186 C28 178 36 150 40 130 Z" fill="#c23a35"/>' +
+    '<path d="M110 150 C120 162 140 170 140 188" stroke="#fff" stroke-width="10" fill="none" stroke-dasharray="2 14" stroke-linecap="round"/>' +
+    '<rect x="30" y="16" width="90" height="38" rx="12" fill="#fff"/>' +
+    '<polygon points="' + star(74, 110, 18, 8, 5) + '" fill="#f3d27a"/></svg>' },
+  { name: 'キャンディ', w: 160, h: 220, svg:
+    '<svg ' + S + ' viewBox="0 0 160 220">' +
+    '<path d="M56 206 V78 a36 36 0 0 1 72 0 v14" stroke="#ffffff" stroke-width="28" fill="none" stroke-linecap="round"/>' +
+    '<path d="M56 206 V78 a36 36 0 0 1 72 0 v14" stroke="#d8332f" stroke-width="28" fill="none" stroke-dasharray="14 16"/>' +
+    '<path d="M44 40 L62 52 L46 64 Z" fill="#2f9152"/></svg>' },
+  { name: 'クッキー', w: 200, h: 220, svg:
+    '<svg ' + S + ' viewBox="0 0 200 220"><g fill="#c27a3e">' +
+    '<circle cx="100" cy="48" r="36"/>' +
+    '<rect x="60" y="76" width="80" height="80" rx="30"/>' +
+    '<rect x="14" y="86" width="70" height="30" rx="15" transform="rotate(-18 50 100)"/>' +
+    '<rect x="116" y="86" width="70" height="30" rx="15" transform="rotate(18 150 100)"/>' +
+    '<rect x="56" y="134" width="32" height="76" rx="16" transform="rotate(14 72 170)"/>' +
+    '<rect x="112" y="134" width="32" height="76" rx="16" transform="rotate(-14 128 170)"/></g>' +
+    '<circle cx="88" cy="44" r="5" fill="#3a2414"/><circle cx="112" cy="44" r="5" fill="#3a2414"/>' +
+    '<path d="M86 60 Q100 70 114 60" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="100" cy="98" r="6" fill="#d8443f"/><circle cx="100" cy="120" r="6" fill="#2f9152"/>' +
+    '<path d="M24 98 l12 -4 M168 98 l-12 -4" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>' },
+  { name: '星', w: 200, h: 200, svg:
+    '<svg ' + S + ' viewBox="0 0 200 200"><polygon points="' + star(100, 104, 92, 40, 5) + '" fill="#f6d040" stroke="#e0a91c" stroke-width="5" stroke-linejoin="round"/>' +
+    '<polygon points="' + star(100, 104, 58, 26, 5) + '" fill="#ffe789" opacity=".7"/></svg>' },
+  { name: 'リース', w: 200, h: 200, svg: (function () {
+    var s = '<svg ' + S + ' viewBox="0 0 200 200">';
+    for (var i = 0; i < 18; i++) {
+      var a = i / 18 * Math.PI * 2, x = 100 + Math.cos(a) * 66, y = 100 + Math.sin(a) * 66;
+      s += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="26" ry="14" fill="' + (i % 2 ? '#2f9152' : '#23703d') + '" transform="rotate(' + (a * 180 / Math.PI + 60).toFixed(0) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"/>';
+    }
+    for (var j = 0; j < 9; j++) {
+      var b = j / 9 * Math.PI * 2 + .3;
+      s += '<circle cx="' + (100 + Math.cos(b) * 64).toFixed(1) + '" cy="' + (100 + Math.sin(b) * 64).toFixed(1) + '" r="7" fill="#d8332f"/>';
+    }
+    s += '<path d="M100 170 C82 150 66 160 74 176 C80 186 96 178 100 170 C104 178 120 186 126 176 C134 160 118 150 100 170 Z" fill="#c23a35"/>' +
+      '<path d="M94 176 L84 198 M106 176 L116 198" stroke="#c23a35" stroke-width="8" stroke-linecap="round"/></svg>';
+    return s;
+  })() }
+];
+
+/* =========================================================
+   状態
+   ========================================================= */
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+var video = document.getElementById('video');
+var W = 0, H = 0, DPR = 1;
+var stream = null, facing = CONFIG.defaultFacing, bgImage = null, mode = 'none'; // 'camera' | 'photo'
+var stickers = [], selected = null;
+var fx = { snow: CONFIG.defaultEffects.snow, sparkle: CONFIG.defaultEffects.sparkle, bokeh: CONFIG.defaultEffects.bokeh };
+var timerOn = false, busy = false;
+var assets = []; // {name, img, w, h, src}
+var lastBlob = null;
+
+/* ===== 素材の読み込み ===== */
+function svgUrl(s) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); }
+SVGS.forEach(function (d) {
+  var img = new Image(); img.src = svgUrl(d.svg);
+  assets.push({ name: d.name, img: img, w: d.w, h: d.h, src: img.src });
+});
+function makeTextAsset(t) {
+  var c = document.createElement('canvas'), x = c.getContext('2d');
+  var f = (t.weight || 400) + ' ' + t.size + 'px ' + t.font;
+  x.font = f;
+  var tw = Math.ceil(x.measureText(t.text).width) + 60, th = Math.ceil(t.size * 1.6);
+  c.width = tw; c.height = th;
+  x.font = f; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
+  if (t.outline) { x.lineWidth = t.size * 0.14; x.strokeStyle = t.outline; x.lineJoin = 'round'; x.strokeText(t.text, tw / 2, th / 2); x.shadowColor = 'transparent'; }
+  x.fillStyle = t.color; x.fillText(t.text, tw / 2, th / 2);
+  return { name: t.text, img: c, w: tw, h: th, src: c.toDataURL() };
+}
+var textAssets = [];
+function buildTextAssets() { textAssets = CONFIG.textStamps.map(makeTextAsset); if (currentTab === 'stamp') renderTray(); }
+
+/* ===== キャンバスのサイズ ===== */
+function resize() {
+  var ow = W, oh = H;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = Math.round(window.innerWidth * DPR); H = Math.round(window.innerHeight * DPR);
+  cv.width = W; cv.height = H;
+  if (ow && oh) stickers.forEach(function (s) { s.x *= W / ow; s.y *= H / oh; s.s *= W / ow; });
+  initParticles();
+}
+window.addEventListener('resize', resize);
+
+/* =========================================================
+   エフェクト（雪・キラキラ・イルミネーション）
+   ========================================================= */
+var snow = [], spark = [], bokeh = [];
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function initParticles() {
+  var area = (W * H) / (DPR * DPR) / 3000;
+  snow = []; spark = []; bokeh = [];
+  for (var i = 0; i < Math.min(160, area); i++) snow.push({ x: rnd(0, W), y: rnd(0, H), r: rnd(1.2, 4.2) * DPR, vy: rnd(30, 90) * DPR, ph: rnd(0, 6.28), amp: rnd(.3, 1.2) * DPR, sp: rnd(.6, 1.6) });
+  for (var j = 0; j < 40; j++) spark.push({ x: rnd(0, W), y: rnd(0, H * .85), size: rnd(6, 16) * DPR, ph: rnd(0, 6.28), sp: rnd(1.5, 3.5) });
+  var cols = ['255,214,120', '255,120,110', '140,220,160', '255,255,255', '255,180,90'];
+  for (var k = 0; k < 26; k++) bokeh.push({ x: rnd(0, W), y: rnd(0, H), r: rnd(18, 50) * DPR, c: cols[k % cols.length], vx: rnd(-6, 6) * DPR, vy: rnd(-10, -3) * DPR, ph: rnd(0, 6.28) });
+}
+function drawFx(t, dt) {
+  if (fx.bokeh) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    bokeh.forEach(function (b) {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.y < -b.r) { b.y = H + b.r; b.x = rnd(0, W); }
+      if (b.x < -b.r) b.x = W + b.r; if (b.x > W + b.r) b.x = -b.r;
+      var a = .22 + .12 * Math.sin(t * 1.2 + b.ph);
+      var g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      g.addColorStop(0, 'rgba(' + b.c + ',' + a + ')'); g.addColorStop(.7, 'rgba(' + b.c + ',' + a * .6 + ')'); g.addColorStop(1, 'rgba(' + b.c + ',0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.fill();
+    });
+    ctx.restore();
+  }
+  if (fx.sparkle) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    spark.forEach(function (p) {
+      var a = Math.max(0, Math.sin(t * p.sp + p.ph));
+      if (a < .05) { if (Math.random() < .02) { p.x = rnd(0, W); p.y = rnd(0, H * .85); } return; }
+      var s = p.size * (.5 + a * .7);
+      ctx.globalAlpha = a; ctx.fillStyle = '#fff1c4';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - s); ctx.quadraticCurveTo(p.x, p.y, p.x + s, p.y);
+      ctx.quadraticCurveTo(p.x, p.y, p.x, p.y + s); ctx.quadraticCurveTo(p.x, p.y, p.x - s, p.y);
+      ctx.quadraticCurveTo(p.x, p.y, p.x, p.y - s); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, s * .18, 0, 6.283); ctx.fillStyle = '#fff'; ctx.fill();
+    });
+    ctx.restore();
+  }
+  if (fx.snow) {
+    ctx.save(); ctx.fillStyle = '#fff';
+    snow.forEach(function (f) {
+      f.y += f.vy * dt; f.x += Math.sin(t * f.sp + f.ph) * f.amp;
+      if (f.y > H + 10) { f.y = -10; f.x = rnd(0, W); }
+      ctx.globalAlpha = .55 + f.r / (4.2 * DPR) * .4;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.283); ctx.fill();
+    });
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   描画ループ
+   ========================================================= */
+function drawCover(src, sw, sh, mirror) {
+  if (!sw || !sh) return;
+  var sc = Math.max(W / sw, H / sh), dw = sw * sc, dh = sh * sc;
+  ctx.save();
+  if (mirror) { ctx.translate(W, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  ctx.restore();
+}
+function drawSticker(s, showSel) {
+  ctx.save();
+  ctx.translate(s.x, s.y); ctx.rotate(s.r); ctx.scale(s.s * (s.flip ? -1 : 1), s.s);
+  ctx.drawImage(s.a.img, -s.a.w / 2, -s.a.h / 2, s.a.w, s.a.h);
+  if (showSel) {
+    ctx.scale(s.flip ? -1 : 1, 1);
+    ctx.lineWidth = 2.5 * DPR / s.s; ctx.setLineDash([8 * DPR / s.s, 6 * DPR / s.s]);
+    ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.strokeRect(-s.a.w / 2 - 6, -s.a.h / 2 - 6, s.a.w + 12, s.a.h + 12);
+  }
+  ctx.restore();
+}
+function render(t, dt, forCapture) {
+  ctx.fillStyle = '#0f2a1d'; ctx.fillRect(0, 0, W, H);
+  if (mode === 'camera' && video.readyState >= 2) drawCover(video, video.videoWidth, video.videoHeight, facing === 'user');
+  else if (mode === 'photo' && bgImage) drawCover(bgImage, bgImage.naturalWidth, bgImage.naturalHeight, false);
+  drawFx(t, forCapture ? 0 : dt);
+  stickers.forEach(function (s) { drawSticker(s, !forCapture && s === selected); });
+}
+var last = performance.now();
+function loop(now) {
+  var dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (mode !== 'none') render(now / 1000, dt, false);
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   カメラ
+   ========================================================= */
+var errEl = document.getElementById('err');
+function showErr(m) { errEl.innerHTML = m; errEl.style.display = 'block'; }
+function stopStream() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } }
+function startCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showErr('このブラウザではカメラを起動できません。<br>LINEやInstagramの中で開いている場合は、SafariやChromeで開き直してください。<br>または下の「カメラが使えない方はこちら」をお使いください。');
+    return Promise.reject();
+  }
+  stopStream();
+  return navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1920 } }
+  }).then(function (s) {
+    stream = s; video.srcObject = s;
+    return video.play();
+  }).then(function () {
+    mode = 'camera'; bgImage = null;
+  }).catch(function (e) {
+    var m = 'カメラを起動できませんでした。';
+    if (e && e.name === 'NotAllowedError') m += '<br>カメラの使用が許可されていません。ブラウザの設定でカメラを許可してください。';
+    else if (location.protocol !== 'https:') m += '<br>このページは https:// のアドレスで開く必要があります。';
+    showErr(m + '<br>下の「カメラが使えない方はこちら」でも撮影できます。');
+    throw e;
+  });
+}
+function enterApp() {
+  document.getElementById('start').style.display = 'none';
+  stopStartSnow();
+  setTimeout(function () { document.getElementById('hint').style.opacity = 0; }, 4500);
+}
+document.getElementById('go').onclick = function () {
+  errEl.style.display = 'none';
+  startCamera().then(enterApp).catch(function () {});
+};
+function loadPhoto(f) {
+  errEl.style.display = 'none';
+  var img = new Image();
+  img.onload = function () { stopStream(); bgImage = img; mode = 'photo'; enterApp(); };
+  img.onerror = function () { showErr('写真を読み込めませんでした。<br>別の写真を選ぶか、SafariやChromeで開き直してください。'); };
+  try {
+    var r = new FileReader();
+    r.onload = function () { img.src = r.result; };
+    r.onerror = function () { img.src = URL.createObjectURL(f); };
+    r.readAsDataURL(f);
+  } catch (err) { img.src = URL.createObjectURL(f); }
+}
+document.getElementById('file').addEventListener('change', function (e) {
+  var f = e.target.files && e.target.files[0]; if (!f) return;
+  loadPhoto(f);
+  setTimeout(function () { e.target.value = ''; }, 0);
+});
+document.getElementById('flip').onclick = function () {
+  if (mode === 'photo') { document.getElementById('file').click(); return; }
+  facing = facing === 'user' ? 'environment' : 'user';
+  startCamera().catch(function () {});
+};
+
+/* =========================================================
+   スタンプ操作（ドラッグ・ピンチ・回転）
+   ========================================================= */
+function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+function hit(p) {
+  for (var i = stickers.length - 1; i >= 0; i--) {
+    var s = stickers[i], dx = p.x - s.x, dy = p.y - s.y;
+    var c = Math.cos(-s.r), sn = Math.sin(-s.r);
+    var lx = (dx * c - dy * sn) / s.s, ly = (dx * sn + dy * c) / s.s;
+    if (Math.abs(lx) <= s.a.w / 2 + 10 && Math.abs(ly) <= s.a.h / 2 + 10) return s;
+  }
+  return null;
+}
+var ptrs = {}, gesture = null;
+function ptrList() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
+function beginGesture() {
+  var l = ptrList();
+  if (!selected || !l.length) { gesture = null; return; }
+  if (l.length === 1) gesture = { type: 'drag', sx: selected.x, sy: selected.y, px: l[0].x, py: l[0].y };
+  else {
+    var a = l[0], b = l[1];
+    gesture = { type: 'pinch', sx: selected.x, sy: selected.y, ss: selected.s, sr: selected.r,
+      d: Math.hypot(b.x - a.x, b.y - a.y) || 1, ang: Math.atan2(b.y - a.y, b.x - a.x), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+}
+cv.addEventListener('pointerdown', function (e) {
+  if (mode === 'none') return;
+  cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
+  var p = pt(e); ptrs[e.pointerId] = p;
+  if (ptrList().length === 1) {
+    var h = hit(p);
+    selected = h;
+    if (h) { stickers.splice(stickers.indexOf(h), 1); stickers.push(h); }
+    updateSelbar();
+  }
+  beginGesture();
+});
+cv.addEventListener('pointermove', function (e) {
+  if (!ptrs[e.pointerId]) return;
+  ptrs[e.pointerId] = pt(e);
+  if (!gesture || !selected) return;
+  var l = ptrList();
+  if (gesture.type === 'drag' && l.length === 1) {
+    selected.x = gesture.sx + l[0].x - gesture.px; selected.y = gesture.sy + l[0].y - gesture.py;
+  } else if (gesture.type === 'pinch' && l.length >= 2) {
+    var a = l[0], b = l[1], d = Math.hypot(b.x - a.x, b.y - a.y);
+    selected.s = Math.max(.08, Math.min(12, gesture.ss * d / gesture.d));
+    selected.r = gesture.sr + Math.atan2(b.y - a.y, b.x - a.x) - gesture.ang;
+    selected.x = gesture.sx + (a.x + b.x) / 2 - gesture.mx; selected.y = gesture.sy + (a.y + b.y) / 2 - gesture.my;
+  }
+});
+function endPtr(e) { delete ptrs[e.pointerId]; beginGesture(); }
+cv.addEventListener('pointerup', endPtr);
+cv.addEventListener('pointercancel', endPtr);
+
+function addSticker(a) {
+  var target = W * (a.w > a.h * 2 ? .7 : .38);
+  var s = { a: a, x: W / 2 + rnd(-.22, .22) * W, y: H * rnd(.28, .6), s: target / a.w, r: 0, flip: false };
+  stickers.push(s); selected = s; updateSelbar();
+}
+var selbar = document.getElementById('selbar');
+function updateSelbar() { selbar.classList.toggle('show', !!selected); }
+document.getElementById('bDel').onclick = function () { if (!selected) return; stickers.splice(stickers.indexOf(selected), 1); selected = null; updateSelbar(); };
+document.getElementById('bFlip').onclick = function () { if (selected) selected.flip = !selected.flip; };
+document.getElementById('bFront').onclick = function () { if (!selected) return; stickers.splice(stickers.indexOf(selected), 1); stickers.push(selected); };
+document.getElementById('clear').onclick = function () { stickers = []; selected = null; updateSelbar(); };
+
+/* =========================================================
+   下部トレイ（スタンプ / エフェクト）
+   ========================================================= */
+var tray = document.getElementById('tray'), currentTab = 'stamp';
+var FX = [
+  { key: 'snow', ic: '❄︎', label: '雪' },
+  { key: 'sparkle', ic: '✦', label: 'キラキラ' },
+  { key: 'bokeh', ic: '◎', label: 'イルミ' }
+];
+function fxLabel() {
+  var on = FX.filter(function (f) { return fx[f.key]; }).map(function (f) { return f.label; });
+  document.getElementById('fxlabel').innerHTML = on.length === 0 ? 'なし' : on.length === 1 ? on[0] : on[0] + '<br>ほか' + (on.length - 1);
+}
+function renderTray() {
+  tray.innerHTML = '';
+  if (currentTab === 'stamp') {
+    textAssets.concat(assets).forEach(function (a) {
+      var b = document.createElement('button'); b.className = 'item';
+      var im = document.createElement('img'); im.src = a.src; im.alt = a.name;
+      b.appendChild(im);
+      b.onclick = function () { addSticker(a); };
+      tray.appendChild(b);
+    });
+  } else {
+    FX.forEach(function (f) {
+      var b = document.createElement('button'); b.className = 'item fx' + (fx[f.key] ? ' on' : '');
+      b.innerHTML = '<span class="ic">' + f.ic + '</span>' + f.label;
+      b.onclick = function () { fx[f.key] = !fx[f.key]; b.classList.toggle('on', fx[f.key]); fxLabel(); };
+      tray.appendChild(b);
+    });
+  }
+}
+Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+  t.onclick = function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (x) { x.classList.remove('on'); });
+    t.classList.add('on'); currentTab = t.getAttribute('data-tab'); renderTray();
+  };
+});
+
+/* =========================================================
+   撮影・保存
+   ========================================================= */
+var timerBtn = document.getElementById('timer');
+timerBtn.onclick = function () { timerOn = !timerOn; timerBtn.classList.toggle('on', timerOn); };
+var countEl = document.getElementById('count');
+function countdown(n, done) {
+  if (n <= 0) { countEl.style.display = 'none'; done(); return; }
+  countEl.style.display = 'flex'; countEl.textContent = n;
+  setTimeout(function () { countdown(n - 1, done); }, 1000);
+}
+function capture() {
+  render(performance.now() / 1000, 0, true);
+  var fl = document.getElementById('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  var dataUrl = cv.toDataURL('image/jpeg', 0.92);
+  document.getElementById('pimg').src = dataUrl;
+  document.getElementById('preview').classList.add('show');
+  busy = false;
+  lastBlob = null;
+  try { cv.toBlob(function (blob) { lastBlob = blob; }, 'image/jpeg', 0.92); } catch (e) {}
+}
+document.getElementById('shutter').onclick = function () {
+  if (busy || mode === 'none') return;
+  busy = true;
+  var keep = selected; selected = null; updateSelbar();
+  if (timerOn) countdown(3, capture); else capture();
+};
+document.getElementById('retake').onclick = function () { document.getElementById('preview').classList.remove('show'); };
+document.getElementById('save').onclick = function () {
+  if (!lastBlob) {
+    var d = document.getElementById('pimg').src, bin = atob(d.split(',')[1]), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    lastBlob = new Blob([u], { type: 'image/jpeg' });
+  }
+  var name = 'xmas-photo-' + Date.now() + '.jpg';
+  var file;
+  try { file = new File([lastBlob], name, { type: 'image/jpeg' }); } catch (e) { file = null; }
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file] }).catch(function () {});
+  } else {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+};
+
+/* =========================================================
+   スタート画面の雪
+   ========================================================= */
+var sc = document.getElementById('start-snow'), sx = sc.getContext('2d'), sflakes = [], sRun = true;
+function startSnow() {
+  sc.width = innerWidth; sc.height = innerHeight;
+  for (var i = 0; i < 70; i++) sflakes.push({ x: rnd(0, sc.width), y: rnd(0, sc.height), r: rnd(1, 3.5), v: rnd(20, 60), p: rnd(0, 6) });
+  var lt = performance.now();
+  (function f(now) {
+    if (!sRun) return;
+    var dt = Math.min(.05, (now - lt) / 1000); lt = now;
+    sx.clearRect(0, 0, sc.width, sc.height); sx.fillStyle = 'rgba(255,255,255,.8)';
+    sflakes.forEach(function (k) {
+      k.y += k.v * dt; k.x += Math.sin(now / 1000 + k.p) * .4;
+      if (k.y > sc.height + 5) { k.y = -5; k.x = rnd(0, sc.width); }
+      sx.beginPath(); sx.arc(k.x, k.y, k.r, 0, 6.283); sx.fill();
+    });
+    requestAnimationFrame(f);
+  })(lt);
+}
+function stopStartSnow() { sRun = false; }
+
+/* ===== 起動 ===== */
+resize();
+renderTray(); fxLabel();
+buildTextAssets();
+if (document.fonts && document.fonts.load) {
+  Promise.all([document.fonts.load('120px "Great Vibes"'), document.fonts.load('700 90px "Zen Maru Gothic"')])
+    .then(buildTextAssets).catch(function () {});
+}
+setTimeout(buildTextAssets, 1500);
+startSnow();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
