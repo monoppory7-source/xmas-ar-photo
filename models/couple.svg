@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 940" width="1240" height="1880">
+  <defs>
+    <!-- 等身大パネル風の白いふち -->
+    <filter id="edge" x="-10%" y="-10%" width="120%" height="120%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="9" result="d"/>
+      <feFlood flood-color="#ffffff"/>
+      <feComposite in2="d" operator="in" result="w"/>
+      <feMerge><feMergeNode in="w"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="gown" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ece6dc"/><stop offset=".35" stop-color="#fffdf9"/>
+      <stop offset=".7" stop-color="#fbf8f2"/><stop offset="1" stop-color="#e6dfd3"/>
+    </linearGradient>
+    <linearGradient id="suit" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1b1d22"/><stop offset=".5" stop-color="#2c2f37"/><stop offset="1" stop-color="#1b1d22"/>
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#edge)">
+    <!-- ===== 花嫁のベール（後ろ） ===== -->
+    <path d="M392 150 C350 170 330 260 322 380 C312 520 300 640 296 760 L470 760 C480 620 486 480 474 330 C468 240 450 170 420 150 Z"
+          fill="#ffffff" opacity=".55"/>
+
+    <!-- ===== 新郎 ===== -->
+    <g>
+      <!-- 脚・靴 -->
+      <rect x="152" y="585" width="44" height="300" rx="10" fill="#1f2127"/>
+      <rect x="206" y="585" width="44" height="300" rx="10" fill="#24262d"/>
+      <ellipse cx="170" cy="890" rx="34" ry="14" fill="#111"/>
+      <ellipse cx="232" cy="890" rx="34" ry="14" fill="#111"/>
+      <!-- 左腕 -->
+      <path d="M126 270 C108 330 106 430 112 520" stroke="#202228" stroke-width="40" fill="none" stroke-linecap="round"/>
+      <circle cx="113" cy="530" r="17" fill="#f3cdb0"/>
+      <!-- 上着 -->
+      <path d="M134 250 Q200 232 268 250 L286 610 Q200 628 116 610 Z" fill="url(#suit)"/>
+      <!-- シャツ・ベスト -->
+      <path d="M176 250 L224 250 L212 420 L200 432 L188 420 Z" fill="#ffffff"/>
+      <path d="M186 300 L214 300 L210 420 L200 432 L190 420 Z" fill="#cfd3da"/>
+      <!-- 襟 -->
+      <path d="M176 250 L196 380 L160 300 Z" fill="#14161a"/>
+      <path d="M224 250 L204 380 L240 300 Z" fill="#14161a"/>
+      <!-- 蝶ネクタイ -->
+      <path d="M200 268 L178 256 L178 282 Z M200 268 L222 256 L222 282 Z" fill="#111"/>
+      <circle cx="200" cy="268" r="6" fill="#111"/>
+      <!-- ボタン -->
+      <circle cx="200" cy="452" r="5" fill="#0d0e11"/><circle cx="200" cy="490" r="5" fill="#0d0e11"/>
+      <!-- ブートニア -->
+      <circle cx="244" cy="310" r="10" fill="#fff"/><circle cx="244" cy="310" r="4" fill="#f2c9d4"/>
+      <path d="M244 320 l-6 12 M244 320 l7 10" stroke="#5c9a63" stroke-width="3" stroke-linecap="round"/>
+      <!-- 右腕（花嫁の方へ） -->
+      <path d="M272 268 C300 320 318 380 330 420" stroke="#262830" stroke-width="40" fill="none" stroke-linecap="round"/>
+      <!-- 首・顔 -->
+      <rect x="186" y="214" width="28" height="40" rx="8" fill="#ecc3a5"/>
+      <ellipse cx="200" cy="168" rx="52" ry="58" fill="#f6d3b8"/>
+      <ellipse cx="147" cy="172" rx="9" ry="14" fill="#f0c6a8"/><ellipse cx="253" cy="172" rx="9" ry="14" fill="#f0c6a8"/>
+      <!-- 髪 -->
+      <path d="M146 166 C140 108 176 92 206 96 C246 98 262 126 256 168 C250 140 238 128 214 124 C196 138 168 140 152 140 C150 150 148 158 146 166 Z" fill="#3a2a20"/>
+      <!-- 目・眉・口 -->
+      <path d="M170 150 q10 -6 20 0 M210 150 q10 -6 20 0" stroke="#3a2a20" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <ellipse cx="180" cy="170" rx="5" ry="6.5" fill="#2a201a"/><ellipse cx="220" cy="170" rx="5" ry="6.5" fill="#2a201a"/>
+      <path d="M184 196 Q200 210 216 196" stroke="#b5614f" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <ellipse cx="166" cy="190" rx="9" ry="5" fill="#f3a7a0" opacity=".55"/><ellipse cx="234" cy="190" rx="9" ry="5" fill="#f3a7a0" opacity=".55"/>
+    </g>
+
+    <!-- ===== 新婦 ===== -->
+    <g>
+      <!-- ドレス（スカート） -->
+      <path d="M372 400 L448 400 C470 520 520 700 560 878 Q410 908 260 878 C300 700 350 520 372 400 Z" fill="url(#gown)"/>
+      <path d="M392 420 C380 560 350 720 326 880 M428 420 C440 560 470 720 494 884 M410 420 L410 900" stroke="#e7dfd2" stroke-width="3" fill="none"/>
+      <path d="M262 878 Q410 908 560 878" stroke="#e2d9ca" stroke-width="6" fill="none"/>
+      <!-- 腕 -->
+      <path d="M372 280 C360 330 368 380 392 420" stroke="#f3cdb0" stroke-width="22" fill="none" stroke-linecap="round"/>
+      <path d="M448 280 C460 330 452 380 428 420" stroke="#f0c8aa" stroke-width="22" fill="none" stroke-linecap="round"/>
+      <!-- 身ごろ -->
+      <path d="M374 286 Q410 300 446 286 L452 404 Q410 416 368 404 Z" fill="#fffdf9"/>
+      <path d="M374 286 Q410 300 446 286" stroke="#e7dfd2" stroke-width="3" fill="none"/>
+      <path d="M368 404 Q410 416 452 404" stroke="#e2c98f" stroke-width="5" fill="none"/>
+      <!-- ブーケ -->
+      <path d="M402 450 L396 520 M418 450 L424 520" stroke="#5c9a63" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="388" cy="440" rx="16" ry="9" fill="#6fae74" transform="rotate(-30 388 440)"/>
+      <ellipse cx="434" cy="440" rx="16" ry="9" fill="#6fae74" transform="rotate(30 434 440)"/>
+      <circle cx="398" cy="418" r="15" fill="#f6c5d2"/><circle cx="424" cy="416" r="15" fill="#ffffff"/>
+      <circle cx="410" cy="436" r="16" fill="#f09bb2"/><circle cx="386" cy="432" r="11" fill="#ffffff"/>
+      <circle cx="436" cy="432" r="11" fill="#f6c5d2"/><circle cx="410" cy="406" r="11" fill="#fff4f6"/>
+      <!-- 首・顔 -->
+      <rect x="398" y="232" width="24" height="44" rx="8" fill="#efc7a9"/>
+      <path d="M380 280 Q410 268 440 280" stroke="#f3cdb0" stroke-width="10" fill="none"/>
+      <ellipse cx="410" cy="196" rx="46" ry="52" fill="#f8d8bf"/>
+      <!-- 髪（アップ） -->
+      <path d="M362 196 C356 140 386 116 412 116 C444 116 466 142 458 196 C452 164 440 150 420 146 C404 160 382 164 366 160 C364 172 363 184 362 196 Z" fill="#4a3226"/>
+      <circle cx="412" cy="112" r="24" fill="#4a3226"/>
+      <!-- ティアラ -->
+      <path d="M384 132 L394 118 L403 130 L412 112 L421 130 L430 118 L440 132" stroke="#e9c35a" stroke-width="5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="412" cy="112" r="4" fill="#ffffff"/>
+      <!-- 目・口 -->
+      <path d="M386 186 q8 6 16 0 M418 186 q8 6 16 0" stroke="#3a2a20" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M398 216 Q410 228 422 216" stroke="#c4566a" stroke-width="4" fill="#e78a9a" stroke-linecap="round"/>
+      <ellipse cx="380" cy="208" rx="10" ry="5.5" fill="#f3a0a6" opacity=".6"/><ellipse cx="440" cy="208" rx="10" ry="5.5" fill="#f3a0a6" opacity=".6"/>
+      <!-- イヤリング -->
+      <circle cx="366" cy="214" r="4" fill="#fff"/><circle cx="454" cy="214" r="4" fill="#fff"/>
+    </g>
+  </g>
+</svg>

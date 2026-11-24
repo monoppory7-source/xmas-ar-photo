@@ -99,7 +99,7 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .artitle{font-size:16px;font-weight:700;color:#f3d27a}
 #mv{flex:1;width:100%;min-height:0;--poster-color:transparent;background:transparent}
 #arBtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:auto;min-width:240px;padding:15px 26px}
-.archips{display:flex;justify-content:center;gap:8px;padding:10px 14px 6px}
+.archips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 14px 6px}
 .chip{padding:9px 14px;border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2)}
 .chip.on{background:#f3d27a;color:#3a2a00;border-color:#f3d27a}
 .artips{margin:4px 20px 0;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.28);font-size:12px;line-height:1.75;color:#f1ead6}
@@ -149,6 +149,7 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
     <button class="chip on" data-m="snowman">雪だるま</button>
     <button class="chip" data-m="tree">ツリー</button>
     <button class="chip" data-m="presents">プレゼント</button>
+    <button class="chip" data-m="couple">新郎新婦</button>
   </div>
   <p class="artips">
     <b>①</b>「ARで目の前に出す」を押す　<b>②</b>床を映してスマホをゆっくり動かす<br>
@@ -171,7 +172,7 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   </div>
   <button class="round" id="timer" aria-label="タイマー">3秒</button>
 </div>
-<div id="hint">タップで追加・ドラッグで移動・2本指で拡大と回転（3Dは向きが変わる）</div>
+<div id="hint">タップで追加・指で移動・2本指で拡大／回転</div>
 
 <!-- 下部 -->
 <div id="bottom">
@@ -358,6 +359,14 @@ function makeTextAsset(t) {
   return { name: t.text, img: c, w: tw, h: th, src: c.toDataURL() };
 }
 var textAssets = [];
+// 新郎新婦パネル（切り抜き画像）。本番では models/couple.png を差し替えるだけ
+(function () {
+  var img = new Image();
+  var a = { name: '新郎新婦', img: img, w: 1024, h: 1721, src: 'models/couple.png', big: true };
+  img.onload = function () { a.w = img.naturalWidth; a.h = img.naturalHeight; };
+  img.src = a.src;
+  assets.unshift(a);
+})();
 function buildTextAssets() { textAssets = CONFIG.textStamps.map(makeTextAsset); if (currentTab === 'stamp') renderTray(); }
 
 /* ===== キャンバスのサイズ ===== */
@@ -582,7 +591,7 @@ cv.addEventListener('pointerup', endPtr);
 cv.addEventListener('pointercancel', endPtr);
 
 function addSticker(a) {
-  var target = W * (a.kind === '3d' ? .75 : a.w > a.h * 2 ? .7 : .38);
+  var target = W * (a.kind === '3d' ? .75 : a.big ? .55 : a.w > a.h * 2 ? .7 : .38);
   var s = { a: a, x: W / 2 + rnd(-.22, .22) * W, y: H * rnd(.28, .6), s: target / a.w, r: 0, flip: false, yaw: a.kind === '3d' ? -0.35 : 0 };
   if (a.kind === '3d') { s.x = W / 2 + rnd(-.12, .12) * W; s.y = H * rnd(.5, .6); }
   stickers.push(s); selected = s; updateSelbar();
@@ -610,7 +619,7 @@ function fxLabel() {
 function renderTray() {
   tray.innerHTML = '';
   if (currentTab === 'stamp') {
-    assets3d.concat(textAssets, assets).forEach(function (a) {
+    assets3d.concat(assets.filter(function (x) { return x.big; }), textAssets, assets.filter(function (x) { return !x.big; })).forEach(function (a) {
       var b = document.createElement('button'); b.className = 'item';
       var im = document.createElement('img'); im.src = a.src; im.alt = a.name;
       b.appendChild(im);
@@ -718,7 +727,7 @@ window.addEventListener('kit3d-ready', on3dReady);
    3D AR画面（床に置くAR）
    ========================================================= */
 var arview = document.getElementById('arview'), mv = document.getElementById('mv');
-var MODELS = { snowman: 1, tree: 1, presents: 1 };
+var MODELS = { snowman: 1, tree: 1, presents: 1, couple: 1 };
 function setModel(name) {
   if (!MODELS[name]) name = 'snowman';
   mv.setAttribute('src', 'models/' + name + '.glb');
