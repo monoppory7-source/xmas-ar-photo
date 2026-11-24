@@ -1,0 +1,7 @@
+このフォルダの部品はすべて外部サービスを使わずに配信するため、ここに同梱しています。
+
+- three.js r170 (MIT License) https://github.com/mrdoob/three.js
+- model-viewer 4.4.0 (Apache License 2.0) https://github.com/google/model-viewer
+- onnxruntime-web 1.31.1 (MIT License) https://github.com/microsoft/onnxruntime
+- Great Vibes font (SIL Open Font License 1.1) https://fonts.google.com/specimen/Great+Vibes
+- models/u2netp.onnx : U²-Net (Apache License 2.0) https://github.com/xuebinqin/U-2-Net

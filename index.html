@@ -5,20 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f2a1d">
 <title>Christmas AR Photo Spot</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<!-- 外部への通信を禁止：このページ（github.io）以外とは一切通信できない -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  "three": "./lib/three/three.module.js",
+  "three/addons/": "./lib/three/addons/"
 } }
 </script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js"></script>
+<script type="module" src="lib/model-viewer.min.js"></script>
 <style>
+@font-face{font-family:"Great Vibes";font-style:normal;font-weight:400;font-display:swap;src:url(lib/fonts/great-vibes-latin-400-normal.woff2) format("woff2")}
 /* ===== 基本 ===== */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#000;color:#fff;overflow:hidden;
-  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif}
+  font-family:"Hiragino Maru Gothic ProN","Zen Maru Gothic","Hiragino Sans",sans-serif}
 button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:none}
 #stage{position:fixed;inset:0;touch-action:none}
 #cv{width:100%;height:100%;display:block;touch-action:none}
@@ -257,7 +259,7 @@ var CONFIG = {
   textStamps: [
     { text: 'Merry Christmas', font: '"Great Vibes", cursive', color: '#f6d77f', size: 120 },
     { text: 'Happy Holidays',  font: '"Great Vibes", cursive', color: '#ffffff', size: 110 },
-    { text: 'XMAS 2026',       font: '"Zen Maru Gothic", sans-serif', color: '#ffffff', size: 90, weight: 700, outline: '#c23a35' }
+    { text: 'XMAS 2026',       font: '"Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif', color: '#ffffff', size: 90, weight: 700, outline: '#c23a35' }
   ],
   defaultEffects: { snow: true, sparkle: false, bokeh: false },
   defaultFacing: 'environment' // 'environment'＝外カメラ / 'user'＝インカメラ
@@ -848,7 +850,7 @@ resize();
 renderTray(); fxLabel();
 buildTextAssets();
 if (document.fonts && document.fonts.load) {
-  Promise.all([document.fonts.load('120px "Great Vibes"'), document.fonts.load('700 90px "Zen Maru Gothic"')])
+  Promise.all([document.fonts.load('120px "Great Vibes"'), document.fonts.load('700 90px "Hiragino Maru Gothic ProN"')])
     .then(buildTextAssets).catch(function () {});
 }
 setTimeout(buildTextAssets, 1500);
@@ -924,8 +926,7 @@ Promise.all(LIST.map(function (it) {
    写真から等身大パネルを作る（すべてスマホの中で処理）
    切り抜きモデル：U²-Net（u2netp、Apache-2.0）を onnxruntime-web で実行
    ========================================================= */
-var ORT_VER = '1.31.1';
-var ORT_DIR = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/';
+var ORT_DIR = new URL('lib/ort/', location.href).href; // 同じサイト内に置いた onnxruntime-web 1.31.1
 var sessP = null;
 function getSession() {
   if (!sessP) {
