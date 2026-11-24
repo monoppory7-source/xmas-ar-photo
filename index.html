@@ -109,6 +109,32 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .item{position:relative}
 .item .b3d{position:absolute;top:3px;right:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:5px;background:#f3d27a;color:#3a2a00}
 
+/* ===== 写真パネル作成画面 ===== */
+#maker{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;
+  background:radial-gradient(ellipse at 50% 30%,#2a5a40 0%,#0f2a1d 65%,#08170f 100%);
+  padding:calc(env(safe-area-inset-top) + 10px) 18px calc(env(safe-area-inset-bottom) + 16px)}
+#maker.show{display:flex}
+#maker .arhead{align-self:stretch;padding:0}
+#mkStage{position:relative;flex:1;min-height:0;width:100%;margin:12px 0;border-radius:18px;
+  background:repeating-conic-gradient(rgba(255,255,255,.06) 0 25%,transparent 0 50%) 0 0/22px 22px;
+  border:1px dashed rgba(243,210,122,.45);display:flex;align-items:center;justify-content:center;overflow:hidden}
+#mkCanvas{max-width:94%;max-height:94%;display:none}
+#mkEmpty,#mkBusy{text-align:center;font-size:14px;line-height:1.8;color:#f1ead6;padding:20px}
+#mkEmpty small{font-size:12px;color:#cfc6ad}
+#mkBusy{display:none}
+.spin{width:34px;height:34px;margin:0 auto 10px;border-radius:50%;border:4px solid rgba(243,210,122,.25);border-top-color:#f3d27a;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.mkrow{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;margin-bottom:12px;font-size:13px;font-weight:700;color:#f3d27a}
+.mkrow input{flex:1;accent-color:#f3d27a}
+.mktools{gap:8px}
+.tool{flex:1;padding:9px 6px;border-radius:999px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff}
+.tool.on{background:#f3d27a;color:#3a2a00;border-color:#f3d27a}
+#mkHv{width:56px;text-align:right;color:#fff}
+#maker .btn-sub{margin:0 0 10px;text-align:center}
+#mkAR:disabled{opacity:.4}
+.mknote{margin-top:10px;font-size:11px;line-height:1.6;color:#bfb79f;text-align:center}
+.btn-sub.gold{color:#3a2a00;background:#f3d27a;border-color:#f3d27a;font-weight:700}
+
 #pnote{margin:12px 0 16px;font-size:12px;color:#d8d0b8;text-align:center;line-height:1.7}
 #preview .btn-main,#preview .btn-sub{max-width:340px}
 </style>
@@ -127,6 +153,7 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   <p class="lead">3Dの雪だるまやツリーが目の前に！<br>一緒に記念撮影しよう</p>
   <button class="btn-main" id="goAR">3Dを目の前に出す<small>床に置いて、横に並んで撮影</small></button>
   <button class="btn-main green" id="go">カメラで飾って撮る<small>スタンプ・降る雪と一緒に撮影</small></button>
+  <button class="btn-sub gold" id="goMaker">写真で等身大パネルを作る</button>
   <label class="btn-sub" for="file" id="gofile">カメラが使えない方はこちら<br><small style="font-size:11px;opacity:.8">（写真を撮る／選んでから飾り付け）</small></label>
   <p id="err"></p>
   <p class="note">カメラの使用を求められたら「許可」を押してください。<br>撮った写真はこのスマホの中にだけ保存されます。</p>
@@ -150,6 +177,8 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
     <button class="chip" data-m="tree">ツリー</button>
     <button class="chip" data-m="presents">プレゼント</button>
     <button class="chip" data-m="couple">新郎新婦</button>
+    <button class="chip" id="chipMine" data-m="mine" style="display:none">わたしのパネル</button>
+    <button class="chip" id="chipMake">＋写真で作る</button>
   </div>
   <p class="artips">
     <b>①</b>「ARで目の前に出す」を押す　<b>②</b>床を映してスマホをゆっくり動かす<br>
@@ -159,6 +188,26 @@ video{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
   <p id="arNo">このスマホ・ブラウザではARが使えないようです。<br>「カメラで飾って撮る」なら3Dスタンプを使えます。</p>
   <button id="arToCam">カメラで飾って撮る →</button>
 </div>
+
+<!-- 写真パネル作成画面 -->
+<div id="maker">
+  <div class="arhead">
+    <button class="round" id="mkBack" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="artitle">写真で等身大パネルを作る</div>
+  </div>
+  <div id="mkStage">
+    <canvas id="mkCanvas"></canvas>
+    <div id="mkEmpty">全身が写った写真を選んでください<br><small>人物を自動で切り抜いて、白いふち付きのパネルにします<br>背景がシンプルな写真ほどきれいに切り抜けます</small></div>
+    <div id="mkBusy"><div class="spin"></div><span id="mkMsg">切り抜き中…</span></div>
+  </div>
+  <div class="mkrow mktools"><button id="mkErase" class="tool">消しゴム</button><button id="mkUndo" class="tool">消した所を戻す</button></div>
+  <div class="mkrow"><span>切り抜きの強さ</span><input type="range" id="mkT" min="60" max="245" step="5" value="190"></div>
+  <div class="mkrow"><span>身長</span><input type="range" id="mkH" min="60" max="200" step="1" value="150"><span id="mkHv">150cm</span></div>
+  <label class="btn-sub" for="mkFile">写真を選ぶ・撮る</label>
+  <button class="btn-main" id="mkAR" disabled>ARで目の前に出す</button>
+  <p class="mknote">写真はこのスマホの中だけで処理され、インターネットに送信・保存されません。<br>作ったパネルは「カメラで飾って撮る」のスタンプにも追加されます。</p>
+</div>
+<input type="file" id="mkFile" accept="image/*" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0">
 
 <!-- 上部 -->
 <div id="top">
@@ -756,9 +805,38 @@ document.getElementById('arToCam').onclick = function () {
   errEl.style.display = 'none';
   startCamera().then(enterApp).catch(function () { if (mode === 'none') { sRun = true; startSnow(); } });
 };
-Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) {
-  c.onclick = function () { setModel(c.getAttribute('data-m')); };
+Array.prototype.forEach.call(document.querySelectorAll('.chip[data-m]'), function (c) {
+  c.onclick = function () { if (c.getAttribute('data-m') === 'mine') showMine(); else setModel(c.getAttribute('data-m')); };
 });
+
+/* ===== 写真パネル（作成画面との受け渡し） ===== */
+var mineUrl = null, mineAsset = null;
+function showMine() {
+  if (!mineUrl) return;
+  mv.setAttribute('src', mineUrl);
+  mv.removeAttribute('ios-src'); // iPhone用のUSDZはmodel-viewerがその場で作る
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function (c) { c.classList.toggle('on', c.id === 'chipMine'); });
+}
+// 作成画面（module側）から呼ばれる
+window.onPanelMade = function (glbUrl, canvas) {
+  if (mineUrl) URL.revokeObjectURL(mineUrl);
+  mineUrl = glbUrl;
+  document.getElementById('chipMine').style.display = '';
+  if (mineAsset) assets.splice(assets.indexOf(mineAsset), 1);
+  mineAsset = { name: 'わたしのパネル', img: canvas, w: canvas.width, h: canvas.height, src: canvas.toDataURL('image/png'), big: true };
+  assets.unshift(mineAsset);
+  if (currentTab === 'stamp') renderTray();
+  document.getElementById('maker').classList.remove('show');
+  arview.classList.add('show'); stopStartSnow();
+  showMine();
+};
+function openMaker() { document.getElementById('maker').classList.add('show'); stopStartSnow(); }
+document.getElementById('goMaker').onclick = openMaker;
+document.getElementById('chipMake').onclick = openMaker;
+document.getElementById('mkBack').onclick = function () {
+  document.getElementById('maker').classList.remove('show');
+  if (mode === 'none' && !arview.classList.contains('show')) { sRun = true; startSnow(); }
+};
 // QRコード用：URLの最後に ?ar=snowman / ?ar=tree / ?ar=presents を付けると、そのモデルのAR画面が直接開く
 (function () {
   var m = /[?&]ar=([a-z]+)/.exec(location.search);
@@ -782,6 +860,7 @@ requestAnimationFrame(loop);
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 var SIZE = 512;
 var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
@@ -840,6 +919,219 @@ Promise.all(LIST.map(function (it) {
   };
   window.dispatchEvent(new Event('kit3d-ready'));
 }).catch(function (e) { console.warn('3Dスタンプを読み込めませんでした', e); });
+
+/* =========================================================
+   写真から等身大パネルを作る（すべてスマホの中で処理）
+   切り抜きモデル：U²-Net（u2netp、Apache-2.0）を onnxruntime-web で実行
+   ========================================================= */
+var ORT_VER = '1.31.1';
+var ORT_DIR = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@' + ORT_VER + '/dist/';
+var sessP = null;
+function getSession() {
+  if (!sessP) {
+    sessP = import(ORT_DIR + 'ort.wasm.bundle.min.mjs').then(function (ort) {
+      ort.env.wasm.wasmPaths = ORT_DIR;
+      ort.env.wasm.numThreads = 1;
+      return ort.InferenceSession.create('models/u2netp.onnx', { executionProviders: ['wasm'] }).then(function (s) { return { ort: ort, s: s }; });
+    });
+    sessP.catch(function () { sessP = null; });
+  }
+  return sessP;
+}
+
+var $ = function (id) { return document.getElementById(id); };
+var mkCanvas = $('mkCanvas'), lastPanel = null;
+function busy(on, msg) {
+  $('mkBusy').style.display = on ? 'block' : 'none';
+  if (msg) $('mkMsg').textContent = msg;
+  if (on) { $('mkEmpty').style.display = 'none'; mkCanvas.style.display = 'none'; }
+}
+function fail(msg) {
+  busy(false); mkCanvas.style.display = 'none';
+  $('mkEmpty').style.display = 'block';
+  $('mkEmpty').innerHTML = msg;
+}
+
+// 連結成分のラベリング（4近傍）
+function label(bin, w, h) {
+  var lab = new Int32Array(w * h), sizes = [0], stack = new Int32Array(w * h), n = 0;
+  for (var i = 0; i < w * h; i++) {
+    if (!bin[i] || lab[i]) continue;
+    n++; var sp = 0, cnt = 0; stack[sp++] = i; lab[i] = n;
+    while (sp) {
+      var p = stack[--sp]; cnt++;
+      var x = p % w, y = (p - x) / w;
+      if (x > 0 && bin[p - 1] && !lab[p - 1]) { lab[p - 1] = n; stack[sp++] = p - 1; }
+      if (x < w - 1 && bin[p + 1] && !lab[p + 1]) { lab[p + 1] = n; stack[sp++] = p + 1; }
+      if (y > 0 && bin[p - w] && !lab[p - w]) { lab[p - w] = n; stack[sp++] = p - w; }
+      if (y < h - 1 && bin[p + w] && !lab[p + w]) { lab[p + w] = n; stack[sp++] = p + w; }
+    }
+    sizes.push(cnt);
+  }
+  return { lab: lab, sizes: sizes };
+}
+
+function cutout(img) {
+  var W0 = img.naturalWidth || img.width, H0 = img.naturalHeight || img.height;
+  var sc = Math.min(1, 1400 / Math.max(W0, H0)), w = Math.round(W0 * sc), h = Math.round(H0 * sc);
+  var src = document.createElement('canvas'); src.width = w; src.height = h;
+  var sctx = src.getContext('2d'); sctx.drawImage(img, 0, 0, w, h);
+  var orig = document.createElement('canvas'); orig.width = w; orig.height = h; orig.getContext('2d').drawImage(src, 0, 0);
+
+  // ---- モデル入力（320×320、rembgと同じ正規化） ----
+  var S = 320, t = document.createElement('canvas'); t.width = t.height = S;
+  var tc = t.getContext('2d'); tc.imageSmoothingEnabled = true; tc.imageSmoothingQuality = 'high';
+  tc.drawImage(src, 0, 0, S, S);
+  var d = tc.getImageData(0, 0, S, S).data, mx = 1;
+  for (var i = 0; i < d.length; i += 4) mx = Math.max(mx, d[i], d[i + 1], d[i + 2]);
+  var N = S * S, f = new Float32Array(3 * N), mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225];
+  for (var p = 0; p < N; p++) {
+    f[p] = (d[p * 4] / mx - mean[0]) / std[0];
+    f[N + p] = (d[p * 4 + 1] / mx - mean[1]) / std[1];
+    f[2 * N + p] = (d[p * 4 + 2] / mx - mean[2]) / std[2];
+  }
+  return getSession().then(function (o) {
+    busy(true, '切り抜き中…');
+    var feeds = {}; feeds[o.s.inputNames[0]] = new o.ort.Tensor('float32', f, [1, 3, S, S]);
+    return o.s.run(feeds).then(function (out) { return out[o.s.outputNames[0]].data; });
+  }).then(function (pred) {
+    var mn = Infinity, mxp = -Infinity;
+    for (var i = 0; i < N; i++) { if (pred[i] < mn) mn = pred[i]; if (pred[i] > mxp) mxp = pred[i]; }
+    // 320のマスクを元のサイズへ拡大
+    var mc = document.createElement('canvas'); mc.width = mc.height = S;
+    var mctx = mc.getContext('2d'), md = mctx.createImageData(S, S);
+    for (var j = 0; j < N; j++) { var v = (pred[j] - mn) / (mxp - mn || 1) * 255; md.data[j * 4] = md.data[j * 4 + 1] = md.data[j * 4 + 2] = 255; md.data[j * 4 + 3] = v; }
+    mctx.putImageData(md, 0, 0);
+    var big = document.createElement('canvas'); big.width = w; big.height = h;
+    var bctx = big.getContext('2d', { willReadFrequently: true }); bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = 'high';
+    bctx.drawImage(mc, 0, 0, w, h);
+    var A = bctx.getImageData(0, 0, w, h).data;
+    return { src: src, orig: orig, A: A, w: w, h: h };
+  });
+}
+
+// マスクのしきい値（切り抜きの強さ）から、白ふち付きパネルを組み立てる
+function compose(c, thr) {
+    var src = c.src, A = c.A, w = c.w, h = c.h, sctx = src.getContext('2d');
+    sctx.globalCompositeOperation = 'copy'; sctx.drawImage(c.orig, 0, 0); sctx.globalCompositeOperation = 'source-over';
+    // ---- 2値化 → 大きい塊だけ残す → 小さな穴を埋める ----
+    var bin = new Uint8Array(w * h);
+    var er = c.erase || (c.erase = new Uint8Array(w * h));
+    for (var k = 0; k < w * h; k++) bin[k] = (A[k * 4 + 3] > thr && !er[k]) ? 1 : 0;
+    var L = label(bin, w, h), maxS = 0;
+    for (var q = 1; q < L.sizes.length; q++) maxS = Math.max(maxS, L.sizes[q]);
+    if (maxS < w * h * 0.01) throw new Error('人物が見つかりませんでした');
+    for (var k2 = 0; k2 < w * h; k2++) if (bin[k2] && L.sizes[L.lab[k2]] < maxS * 0.2) bin[k2] = 0;
+    var inv = new Uint8Array(w * h); for (var k3 = 0; k3 < w * h; k3++) inv[k3] = bin[k3] ? 0 : 1;
+    var H2 = label(inv, w, h), touch = new Uint8Array(H2.sizes.length);
+    for (var x = 0; x < w; x++) { touch[H2.lab[x]] = 1; touch[H2.lab[(h - 1) * w + x]] = 1; }
+    for (var y = 0; y < h; y++) { touch[H2.lab[y * w]] = 1; touch[H2.lab[y * w + w - 1]] = 1; }
+    for (var k4 = 0; k4 < w * h; k4++) if (inv[k4] && !touch[H2.lab[k4]] && H2.sizes[H2.lab[k4]] < w * h * 0.003) bin[k4] = 1;
+
+    // ---- 切り抜き画像（境界は少しだけなめらかに） ----
+    var im = sctx.getImageData(0, 0, w, h), x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) {
+      var id = yy * w + xx, a = bin[id] ? 255 : 0;
+      im.data[id * 4 + 3] = a;
+      if (a) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    }
+    sctx.putImageData(im, 0, 0);
+    var cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+
+    // ---- 白いふちを付ける ----
+    var r = Math.max(6, Math.round(Math.max(cw, ch) * 0.018)), pad = r + 3;
+    var person = document.createElement('canvas'); person.width = cw; person.height = ch;
+    person.getContext('2d').drawImage(src, x0, y0, cw, ch, 0, 0, cw, ch);
+    var sil = document.createElement('canvas'); sil.width = cw; sil.height = ch;
+    var sl = sil.getContext('2d'); sl.drawImage(person, 0, 0); sl.globalCompositeOperation = 'source-in'; sl.fillStyle = '#fff'; sl.fillRect(0, 0, cw, ch);
+    var outC = document.createElement('canvas'); outC.width = cw + pad * 2; outC.height = ch + pad * 2;
+    var oc = outC.getContext('2d');
+    for (var ang = 0; ang < 32; ang++) { var th = ang / 32 * Math.PI * 2; oc.drawImage(sil, pad + Math.cos(th) * r, pad + Math.sin(th) * r); }
+    oc.drawImage(sil, pad, pad);
+    // 裏面（無地）
+    var back = document.createElement('canvas'); back.width = outC.width; back.height = outC.height;
+    var bk = back.getContext('2d'); bk.drawImage(outC, 0, 0); bk.globalCompositeOperation = 'source-in'; bk.fillStyle = '#e8e2d8'; bk.fillRect(0, 0, back.width, back.height);
+    oc.drawImage(person, pad, pad);
+    c.x0 = x0; c.y0 = y0; c.pad = pad; c.brush = Math.max(8, Math.round(Math.max(cw, ch) * 0.035));
+    return { front: outC, back: back, personH: ch, pad: pad };
+}
+
+function showPreview(pn) {
+  busy(false);
+  mkCanvas.width = pn.front.width; mkCanvas.height = pn.front.height;
+  mkCanvas.getContext('2d').drawImage(pn.front, 0, 0);
+  mkCanvas.style.display = 'block';
+  $('mkAR').disabled = false;
+}
+
+$('mkFile').addEventListener('change', function (e) {
+  var file = e.target.files && e.target.files[0]; if (!file) return;
+  setTimeout(function () { e.target.value = ''; }, 0);
+  $('mkAR').disabled = true; lastPanel = null; lastCut = null; setEraser(false);
+  busy(true, sessP ? '切り抜き中…' : '準備中…（初回は数秒〜十数秒かかります）');
+  var img = new Image();
+  img.onload = function () {
+    cutout(img).then(function (c) { lastCut = c; remake(); })
+      .catch(function (err) { console.warn(err); fail('うまく切り抜けませんでした。<br><small>人物が大きく写った、背景がシンプルな写真で試してください。</small>'); });
+  };
+  img.onerror = function () { fail('写真を読み込めませんでした。<br><small>別の写真で試してください。</small>'); };
+  var fr = new FileReader(); fr.onload = function () { img.src = fr.result; }; fr.readAsDataURL(file);
+});
+
+var lastCut = null;
+function remake() {
+  if (!lastCut) return;
+  try { lastPanel = compose(lastCut, parseInt($('mkT').value, 10)); showPreview(lastPanel); }
+  catch (err) { console.warn(err); fail('うまく切り抜けませんでした。<br><small>「切り抜きの強さ」を弱めるか、別の写真で試してください。</small>'); }
+}
+$('mkT').addEventListener('change', remake);
+
+/* ---- 消しゴム：残った背景を指でなぞって消す ---- */
+var erasing = false, drawing = false;
+function setEraser(on) {
+  erasing = on; $('mkErase').classList.toggle('on', on);
+  $('mkErase').textContent = on ? '消しゴムON：なぞる' : '消しゴム';
+  mkCanvas.style.touchAction = on ? 'none' : 'auto';
+}
+$('mkErase').addEventListener('click', function () { if (lastCut) setEraser(!erasing); });
+$('mkUndo').addEventListener('click', function () { if (!lastCut) return; lastCut.erase = null; remake(); });
+function eraseAt(e) {
+  var c = lastCut, r = mkCanvas.getBoundingClientRect();
+  var fx = (e.clientX - r.left) * mkCanvas.width / r.width, fy = (e.clientY - r.top) * mkCanvas.height / r.height;
+  var sx = Math.round(fx - c.pad + c.x0), sy = Math.round(fy - c.pad + c.y0), b = c.brush;
+  for (var y = Math.max(0, sy - b); y <= Math.min(c.h - 1, sy + b); y++)
+    for (var x = Math.max(0, sx - b); x <= Math.min(c.w - 1, sx + b); x++)
+      if ((x - sx) * (x - sx) + (y - sy) * (y - sy) <= b * b) c.erase[y * c.w + x] = 1;
+  var g = mkCanvas.getContext('2d'); g.save(); g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.arc(fx, fy, b, 0, Math.PI * 2); g.fill(); g.restore();
+}
+mkCanvas.addEventListener('pointerdown', function (e) { if (!erasing || !lastCut) return; drawing = true; mkCanvas.setPointerCapture && mkCanvas.setPointerCapture(e.pointerId); eraseAt(e); e.preventDefault(); });
+mkCanvas.addEventListener('pointermove', function (e) { if (drawing) { eraseAt(e); e.preventDefault(); } });
+function endErase() { if (drawing) { drawing = false; remake(); } }
+mkCanvas.addEventListener('pointerup', endErase);
+mkCanvas.addEventListener('pointercancel', endErase);
+$('mkH').addEventListener('input', function () { $('mkHv').textContent = this.value + 'cm'; });
+
+$('mkAR').addEventListener('click', function () {
+  if (!lastPanel) return;
+  var btn = this; btn.disabled = true;
+  var personM = parseInt($('mkH').value, 10) / 100;
+  var H = personM * lastPanel.front.height / lastPanel.personH, Wd = H * lastPanel.front.width / lastPanel.front.height;
+  var tex = function (c) { var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  var mat = function (c) { return new THREE.MeshStandardMaterial({ map: tex(c), alphaTest: 0.5, roughness: 1, metalness: 0 }); };
+  var g = new THREE.Group();
+  var fm = new THREE.Mesh(new THREE.PlaneGeometry(Wd, H), mat(lastPanel.front)); fm.position.set(0, H / 2, 0.003); g.add(fm);
+  var bm = new THREE.Mesh(new THREE.PlaneGeometry(Wd, H), mat(lastPanel.back)); bm.position.set(0, H / 2, -0.003); bm.rotation.y = Math.PI; g.add(bm);
+  var sc = new THREE.Scene(); sc.add(g);
+  new GLTFExporter().parseAsync(sc, { binary: true }).then(function (glb) {
+    var url = URL.createObjectURL(new Blob([glb], { type: 'model/gltf-binary' }));
+    btn.disabled = false;
+    window.onPanelMade(url, lastPanel.front);
+  }).catch(function (err) { console.warn(err); btn.disabled = false; fail('パネルを作れませんでした。もう一度お試しください。'); });
+});
+// 作成画面を開いたら、切り抜きの準備を先に始めておく
+$('goMaker').addEventListener('click', function () { getSession(); });
+$('chipMake').addEventListener('click', function () { getSession(); });
 </script>
 </body>
 </html>
